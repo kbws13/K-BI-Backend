@@ -84,10 +84,10 @@ wx:
 # todo 需替换配置
 cos:
   client:
-    accessKey: AKIDraMe1N3ri1bHvjgXUSKKWmBgK9tm2Ng5
-    secretKey: eRKDEKb3gKBeAlZRTbgekllhf1OmWPLR
-    region: ap-chengdu
-    bucket: blog-1312417182
+    accessKey:
+    secretKey:
+    region:
+    bucket:
 
 # 接口文档配置
 knife4j:
