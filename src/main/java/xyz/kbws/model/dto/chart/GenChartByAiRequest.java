@@ -5,20 +5,10 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 编辑请求
+ * 文件上传请求
  */
 @Data
-public class ChartEditRequest implements Serializable {
-
-    /**
-     * id
-     */
-    private Long id;
-
-    /**
-     * 分析目标
-     */
-    private String goal;
+public class GenChartByAiRequest implements Serializable {
 
     /**
      * 图表名称
@@ -26,9 +16,9 @@ public class ChartEditRequest implements Serializable {
     private String name;
 
     /**
-     * 图表数据
+     * 分析目标
      */
-    private String chartData;
+    private String goal;
 
     /**
      * 图表类型
