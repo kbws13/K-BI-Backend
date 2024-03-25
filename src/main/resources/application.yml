@@ -100,3 +100,9 @@ knife4j:
         api-rule: package
         api-rule-resources:
           - xyz.kbws.controller
+
+xunfei:
+  client:
+    appid: xxx
+    apiSecret: xxx
+    apiKey: xxx

@@ -19,13 +19,16 @@ import xyz.kbws.constant.FileConstant;
 import xyz.kbws.constant.UserConstant;
 import xyz.kbws.exception.BusinessException;
 import xyz.kbws.exception.ThrowUtils;
+import xyz.kbws.manager.AIManager;
 import xyz.kbws.model.dto.chart.*;
 import xyz.kbws.model.dto.file.UploadFileRequest;
 import xyz.kbws.model.entity.Chart;
 import xyz.kbws.model.entity.User;
 import xyz.kbws.model.enums.FileUploadBizEnum;
+import xyz.kbws.model.vo.BiResponse;
 import xyz.kbws.service.ChartService;
 import xyz.kbws.service.UserService;
+import xyz.kbws.utils.ChartDataUtil;
 import xyz.kbws.utils.ExcelUtils;
 import xyz.kbws.utils.SqlUtils;
 
@@ -46,6 +49,9 @@ public class ChartController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private AIManager aiManager;
 
 
     // region 增删改查
@@ -147,7 +153,7 @@ public class ChartController {
      */
     @PostMapping("/list/page")
     public BaseResponse<Page<Chart>> listChartByPage(@RequestBody ChartQueryRequest chartQueryRequest,
-                                                       HttpServletRequest request) {
+                                                     HttpServletRequest request) {
         long current = chartQueryRequest.getCurrent();
         long size = chartQueryRequest.getPageSize();
         // 限制爬虫
@@ -166,7 +172,7 @@ public class ChartController {
      */
     @PostMapping("/my/list/page")
     public BaseResponse<Page<Chart>> listMyChartByPage(@RequestBody ChartQueryRequest chartQueryRequest,
-                                                         HttpServletRequest request) {
+                                                       HttpServletRequest request) {
         if (chartQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -217,25 +223,33 @@ public class ChartController {
      * @return
      */
     @PostMapping("/genChartByAi")
-    public BaseResponse<String> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
-                                             GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+    public BaseResponse<BiResponse> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
+                                                 GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         String name = genChartByAiRequest.getName();
         String goal = genChartByAiRequest.getGoal();
         String chartType = genChartByAiRequest.getChartType();
-
+        User loginUser = userService.getLoginUser(request);
         // 校验
         ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "目标为空");
         ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "名称过长");
-
-        // 用户输入
-        StringBuilder userInput = new StringBuilder();
-        userInput.append("你是一个数据分析师，接下来我会给你我的分析目标和原始数据，请告诉我分析结论。").append("\n");
-        userInput.append("分析目标：").append(goal).append("\n");
-        // 压缩后的数据
-        String result = ExcelUtils.excelToCsv(multipartFile);
-        userInput.append("数据：").append(result).append("\n");
-
-        return ResultUtils.success(userInput.toString());
+        // 分析 xlsx 文件
+        String csvData = ExcelUtils.excelToCsv(multipartFile);
+        // 发送给 AI 分析数据
+        ChartGenResult chartGenResult = ChartDataUtil.getGenResult(aiManager, goal, csvData, chartType);
+        String genChart = chartGenResult.getGenChart();
+        String genResult = chartGenResult.getGenResult();
+        Chart chart = new Chart();
+        chart.setGoal(goal);
+        chart.setName(name);
+        chart.setChartData(csvData);
+        chart.setChartType(chartType);
+        chart.setGenChart(genChart);
+        chart.setGenResult(genResult);
+        chart.setUserId(loginUser.getId());
+        boolean saveResult = chartService.save(chart);
+        ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
+        BiResponse biResponse = new BiResponse(chart.getId(), genChart, genResult);
+        return ResultUtils.success(biResponse);
         // 读取用户上传的 Excel 文件，进行处理
 
         //User loginUser = userService.getLoginUser(request);
