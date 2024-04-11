@@ -8,10 +8,7 @@ import xyz.kbws.exception.ThrowUtils;
 import xyz.kbws.manager.AIManager;
 import xyz.kbws.model.dto.chart.ChartGenResult;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +19,10 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class ChartDataUtil {
+
+    // 定义正则表达式
+    private static final String regex = "【【【【【 (前端代码|分析结论) 【【【【【[\\s\\S]*?【【【【【 ";
+
     public static String changeDataToCSV(List<Map<String, Object>> chartOriginalData) {
         List<Set<String>> columnSets = chartOriginalData.stream()
                 .map(Map::keySet)
@@ -61,6 +62,7 @@ public class ChartDataUtil {
     public static ChartGenResult getGenResult(final AIManager aiManager, final String goal, final String cvsData, final String chartType) {
         String promote = AIManager.PRECONDITION + "分析需求 " + goal + " \n原始数据如下: " + cvsData + "\n生成图标的类型是: " + chartType;
         String resultData = aiManager.sendMesToAIUseXingHuo(promote);
+        resultData = resultData.replace(regex, "");
         log.info("AI 生成的信息: {}", resultData);
         ThrowUtils.throwIf(resultData.split("【【【【【").length < 3, ErrorCode.SYSTEM_ERROR);
         String genChart = resultData.split("【【【【【")[1].trim();
