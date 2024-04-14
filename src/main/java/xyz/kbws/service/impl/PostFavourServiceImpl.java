@@ -5,6 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.springframework.aop.framework.AopContext;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import xyz.kbws.common.ErrorCode;
 import xyz.kbws.exception.BusinessException;
 import xyz.kbws.mapper.PostFavourMapper;
@@ -13,10 +16,8 @@ import xyz.kbws.model.entity.PostFavour;
 import xyz.kbws.model.entity.User;
 import xyz.kbws.service.PostFavourService;
 import xyz.kbws.service.PostService;
+
 import javax.annotation.Resource;
-import org.springframework.aop.framework.AopContext;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 帖子收藏服务实现

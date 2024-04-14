@@ -1,13 +1,5 @@
 package xyz.kbws.aop;
 
-import xyz.kbws.annotation.AuthCheck;
-import xyz.kbws.common.ErrorCode;
-import xyz.kbws.exception.BusinessException;
-import xyz.kbws.model.entity.User;
-import xyz.kbws.model.enums.UserRoleEnum;
-import xyz.kbws.service.UserService;
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -16,6 +8,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import xyz.kbws.annotation.AuthCheck;
+import xyz.kbws.common.ErrorCode;
+import xyz.kbws.exception.BusinessException;
+import xyz.kbws.model.entity.User;
+import xyz.kbws.model.enums.UserRoleEnum;
+import xyz.kbws.service.UserService;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * 权限校验 AOP

@@ -1,10 +1,10 @@
 package xyz.kbws.controller;
 
+import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -15,16 +15,14 @@ import xyz.kbws.common.DeleteRequest;
 import xyz.kbws.common.ErrorCode;
 import xyz.kbws.common.ResultUtils;
 import xyz.kbws.constant.CommonConstant;
-import xyz.kbws.constant.FileConstant;
 import xyz.kbws.constant.UserConstant;
 import xyz.kbws.exception.BusinessException;
 import xyz.kbws.exception.ThrowUtils;
 import xyz.kbws.manager.AIManager;
+import xyz.kbws.manager.RedisLimiterManager;
 import xyz.kbws.model.dto.chart.*;
-import xyz.kbws.model.dto.file.UploadFileRequest;
 import xyz.kbws.model.entity.Chart;
 import xyz.kbws.model.entity.User;
-import xyz.kbws.model.enums.FileUploadBizEnum;
 import xyz.kbws.model.vo.BiResponse;
 import xyz.kbws.service.ChartService;
 import xyz.kbws.service.UserService;
@@ -34,7 +32,8 @@ import xyz.kbws.utils.SqlUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 帖子接口
@@ -52,6 +51,9 @@ public class ChartController {
 
     @Resource
     private AIManager aiManager;
+
+    @Resource
+    private RedisLimiterManager redisLimiterManager;
 
 
     // region 增删改查
@@ -232,6 +234,18 @@ public class ChartController {
         // 校验
         ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "目标为空");
         ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "名称过长");
+        // 校验文件
+        long size = multipartFile.getSize();
+        String originalFilename = multipartFile.getOriginalFilename();
+        // 校验文件大小
+        final long ONE_MB = 1024 * 1024L;
+        ThrowUtils.throwIf(size > 10 * ONE_MB, ErrorCode.PARAMS_ERROR, "文件超过 10M");
+        // 校验文件后缀 aaa.png
+        String suffix = FileUtil.getSuffix(originalFilename);
+        final List<String> validFileSuffixList = Arrays.asList("png", "jpg", "svg", "webp", "jpeg");
+        ThrowUtils.throwIf(!validFileSuffixList.contains(suffix), ErrorCode.PARAMS_ERROR, "文件后缀非法");
+        // 增加限流器
+        redisLimiterManager.doRateLimit("genChartByAi_" + loginUser.getId());
         // 分析 xlsx 文件
         String csvData = ExcelUtils.excelToCsv(multipartFile);
         // 发送给 AI 分析数据

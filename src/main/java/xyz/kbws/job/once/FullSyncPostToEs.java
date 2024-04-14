@@ -1,15 +1,16 @@
 package xyz.kbws.job.once;
 
+import cn.hutool.core.collection.CollUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
 import xyz.kbws.esdao.PostEsDao;
 import xyz.kbws.model.dto.post.PostEsDTO;
 import xyz.kbws.model.entity.Post;
 import xyz.kbws.service.PostService;
+
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Resource;
-import lombok.extern.slf4j.Slf4j;
-import cn.hutool.core.collection.CollUtil;
-import org.springframework.boot.CommandLineRunner;
 
 /**
  * 全量同步帖子到 es

@@ -1,7 +1,8 @@
 package xyz.kbws.model.dto.postthumb;
 
-import java.io.Serializable;
 import lombok.Data;
+
+import java.io.Serializable;
 
 /**
  * 帖子点赞请求
@@ -9,10 +10,9 @@ import lombok.Data;
 @Data
 public class PostThumbAddRequest implements Serializable {
 
+    private static final long serialVersionUID = 1L;
     /**
      * 帖子 id
      */
     private Long postId;
-
-    private static final long serialVersionUID = 1L;
 }

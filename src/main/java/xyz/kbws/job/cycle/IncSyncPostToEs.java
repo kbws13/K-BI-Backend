@@ -1,16 +1,17 @@
 package xyz.kbws.job.cycle;
 
+import cn.hutool.core.collection.CollUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import xyz.kbws.esdao.PostEsDao;
 import xyz.kbws.mapper.PostMapper;
 import xyz.kbws.model.dto.post.PostEsDTO;
 import xyz.kbws.model.entity.Post;
+
+import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Resource;
-import lombok.extern.slf4j.Slf4j;
-import cn.hutool.core.collection.CollUtil;
-import org.springframework.scheduling.annotation.Scheduled;
 
 /**
  * 增量同步帖子到 es

@@ -1,7 +1,7 @@
 package xyz.kbws.service;
 
-import xyz.kbws.model.entity.PostThumb;
 import com.baomidou.mybatisplus.extension.service.IService;
+import xyz.kbws.model.entity.PostThumb;
 import xyz.kbws.model.entity.User;
 
 /**

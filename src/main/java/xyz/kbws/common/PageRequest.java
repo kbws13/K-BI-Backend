@@ -1,7 +1,7 @@
 package xyz.kbws.common;
 
-import xyz.kbws.constant.CommonConstant;
 import lombok.Data;
+import xyz.kbws.constant.CommonConstant;
 
 /**
  * 分页请求

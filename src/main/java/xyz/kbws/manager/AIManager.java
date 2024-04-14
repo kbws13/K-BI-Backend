@@ -21,9 +21,6 @@ import java.util.List;
 @Slf4j
 public class AIManager {
 
-    @Resource
-    private SparkClient sparkClient;
-
     /**
      * AI 生成问题的预设条件
      */
@@ -38,7 +35,8 @@ public class AIManager {
             "【【【【【\n" +
             "{明确的数据分析结论、越详细越好，不要生成多余的注释} \n" +
             "最终格式是:  【【【【【 前端代码【【【【【分析结论 \n";
-
+    @Resource
+    private SparkClient sparkClient;
 
     /**
      * 向 AI 发送请求

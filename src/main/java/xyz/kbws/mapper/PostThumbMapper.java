@@ -1,7 +1,7 @@
 package xyz.kbws.mapper;
 
-import xyz.kbws.model.entity.PostThumb;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import xyz.kbws.model.entity.PostThumb;
 
 /**
  * 帖子点赞数据库操作

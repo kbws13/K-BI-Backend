@@ -8,7 +8,10 @@ import xyz.kbws.exception.ThrowUtils;
 import xyz.kbws.manager.AIManager;
 import xyz.kbws.model.dto.chart.ChartGenResult;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 /**
@@ -53,7 +56,8 @@ public class ChartDataUtil {
 
     /**
      * 获取 AI 生成结果
-     * @param aiManager  AI 能力
+     *
+     * @param aiManager AI 能力
      * @param goal
      * @param cvsData
      * @param chartType

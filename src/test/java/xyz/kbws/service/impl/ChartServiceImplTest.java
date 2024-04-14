@@ -6,8 +6,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import xyz.kbws.manager.AIManager;
 
 import javax.annotation.Resource;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author kbws

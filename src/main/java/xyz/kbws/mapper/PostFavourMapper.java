@@ -5,9 +5,9 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.apache.ibatis.annotations.Param;
 import xyz.kbws.model.entity.Post;
 import xyz.kbws.model.entity.PostFavour;
-import org.apache.ibatis.annotations.Param;
 
 /**
  * 帖子收藏数据库操作
@@ -23,7 +23,7 @@ public interface PostFavourMapper extends BaseMapper<PostFavour> {
      * @return
      */
     Page<Post> listFavourPostByPage(IPage<Post> page, @Param(Constants.WRAPPER) Wrapper<Post> queryWrapper,
-            long favourUserId);
+                                    long favourUserId);
 
 }
 
