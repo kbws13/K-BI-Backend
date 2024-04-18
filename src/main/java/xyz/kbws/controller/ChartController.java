@@ -34,6 +34,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 帖子接口
@@ -51,6 +53,9 @@ public class ChartController {
 
     @Resource
     private AIManager aiManager;
+
+    @Resource
+    private ThreadPoolExecutor threadPoolExecutor;
 
     @Resource
     private RedisLimiterManager redisLimiterManager;
@@ -248,46 +253,43 @@ public class ChartController {
         redisLimiterManager.doRateLimit("genChartByAi_" + loginUser.getId());
         // 分析 xlsx 文件
         String csvData = ExcelUtils.excelToCsv(multipartFile);
-        // 发送给 AI 分析数据
-        ChartGenResult chartGenResult = ChartDataUtil.getGenResult(aiManager, goal, csvData, chartType);
-        String genChart = chartGenResult.getGenChart();
-        String genResult = chartGenResult.getGenResult();
         Chart chart = new Chart();
         chart.setGoal(goal);
         chart.setName(name);
         chart.setChartData(csvData);
         chart.setChartType(chartType);
-        chart.setGenChart(genChart);
-        chart.setGenResult(genResult);
+        chart.setStatus("wait");
         chart.setUserId(loginUser.getId());
         boolean saveResult = chartService.save(chart);
         ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
-        BiResponse biResponse = new BiResponse(chart.getId(), genChart, genResult);
+        // todo 处理任务队列满了之后，抛异常的情况
+        CompletableFuture.runAsync(() -> {
+            // 先修改图表任务状态为 “执行中”。等执行成功后，修改为 “已完成”、保存执行结果；执行失败后，状态修改为 “失败”，记录任务失败信息
+            Chart updateChart = new Chart();
+            updateChart.setId(chart.getId());
+            updateChart.setStatus("running");
+            boolean b = chartService.updateById(updateChart);
+            if (!b) {
+                handleChartUpdateError(chart.getId(), "更新图表执行中状态失败");
+                return;
+            }
+            // 发送给 AI 分析数据
+            ChartGenResult chartGenResult = ChartDataUtil.getGenResult(aiManager, goal, csvData, chartType);
+            String genChart = chartGenResult.getGenChart();
+            String genResult = chartGenResult.getGenResult();
+            Chart updateChartResult = new Chart();
+            updateChartResult.setId(chart.getId());
+            updateChartResult.setGenChart(genChart);
+            updateChartResult.setGenResult(genResult);
+            // todo 定义状态为枚举值
+            boolean updateResult = chartService.updateById(updateChartResult);
+            if (!updateResult) {
+                handleChartUpdateError(chart.getId(), "更新图表成功状态失败");
+            }
+        }, threadPoolExecutor);
+        BiResponse biResponse = new BiResponse();
+        biResponse.setChartId(chart.getId());
         return ResultUtils.success(biResponse);
-        // 读取用户上传的 Excel 文件，进行处理
-
-        //User loginUser = userService.getLoginUser(request);
-        //// 文件目录：根据业务、用户来划分
-        //String uuid = RandomStringUtils.randomAlphanumeric(8);
-        //String filename = uuid + "-" + multipartFile.getOriginalFilename();
-        //File file = null;
-        //try {
-        //
-        //    // 返回可访问地址
-        //    return null;
-        //    //return ResultUtils.success(FileConstant.COS_HOST + filepath);
-        //} catch (Exception e) {
-        //    //log.error("file upload error, filepath = " + filepath, e);
-        //    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传失败");
-        //} finally {
-        //    if (file != null) {
-        //        // 删除临时文件
-        //        boolean delete = file.delete();
-        //        if (!delete) {
-        //            //log.error("file delete error, filepath = {}", filepath);
-        //        }
-        //    }
-        //}
     }
 
     /**
@@ -319,5 +321,17 @@ public class ChartController {
                 sortField);
         return queryWrapper;
     }
+
+    private void handleChartUpdateError(long chartId, String execMessage) {
+        Chart updateChartResult = new Chart();
+        updateChartResult.setId(chartId);
+        updateChartResult.setStatus("failed");
+        updateChartResult.setExecMessage("execMessage");
+        boolean updateResult = chartService.updateById(updateChartResult);
+        if (!updateResult) {
+            log.error("更新图表失败状态失败" + chartId + "," + execMessage);
+        }
+    }
+
 
 }
