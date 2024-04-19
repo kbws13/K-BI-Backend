@@ -155,12 +155,10 @@ public class ChartController {
      * 分页获取列表（封装类）
      *
      * @param chartQueryRequest
-     * @param request
      * @return
      */
     @PostMapping("/list/page")
-    public BaseResponse<Page<Chart>> listChartByPage(@RequestBody ChartQueryRequest chartQueryRequest,
-                                                     HttpServletRequest request) {
+    public BaseResponse<Page<Chart>> listChartByPage(@RequestBody ChartQueryRequest chartQueryRequest) {
         long current = chartQueryRequest.getCurrent();
         long size = chartQueryRequest.getPageSize();
         // 限制爬虫
@@ -222,12 +220,12 @@ public class ChartController {
     }
 
     /**
-     * 智能分析
+     * 智能分析（同步）
      *
-     * @param multipartFile
-     * @param genChartByAiRequest
-     * @param request
-     * @return
+     * @param multipartFile       用户上传文件
+     * @param genChartByAiRequest AI 分析请求
+     * @param request             request
+     * @return AI 生成结果
      */
     @PostMapping("/genChartByAi")
     public BaseResponse<BiResponse> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
@@ -247,7 +245,57 @@ public class ChartController {
         ThrowUtils.throwIf(size > 10 * ONE_MB, ErrorCode.PARAMS_ERROR, "文件超过 10M");
         // 校验文件后缀 aaa.png
         String suffix = FileUtil.getSuffix(originalFilename);
-        final List<String> validFileSuffixList = Arrays.asList("png", "jpg", "svg", "webp", "jpeg");
+        final List<String> validFileSuffixList = Arrays.asList("xlsx", "xls");
+        ThrowUtils.throwIf(!validFileSuffixList.contains(suffix), ErrorCode.PARAMS_ERROR, "文件后缀非法");
+        // 增加限流器
+        redisLimiterManager.doRateLimit("genChartByAi_" + loginUser.getId());
+        // 分析 xlsx 文件
+        String csvData = ExcelUtils.excelToCsv(multipartFile);
+        // 发送给 AI 分析数据
+        ChartGenResult chartGenResult = ChartDataUtil.getGenResult(aiManager, goal, csvData, chartType);
+        String genChart = chartGenResult.getGenChart();
+        String genResult = chartGenResult.getGenResult();
+        Chart chart = new Chart();
+        chart.setGoal(goal);
+        chart.setName(name);
+        chart.setChartData(csvData);
+        chart.setChartType(chartType);
+        chart.setGenChart(genChart);
+        chart.setGenResult(genResult);
+        chart.setUserId(loginUser.getId());
+        boolean saveResult = chartService.save(chart);
+        ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
+        BiResponse biResponse = new BiResponse(chart.getId(), genChart, genResult);
+        return ResultUtils.success(biResponse);
+    }
+
+    /**
+     * 智能分析（异步）
+     *
+     * @param multipartFile       用户上传文件
+     * @param genChartByAiRequest AI 分析请求
+     * @param request             request
+     * @return AI 生成结果
+     */
+    @PostMapping("/genChartByAi/async")
+    public BaseResponse<BiResponse> genChartByAiAsync(@RequestPart("file") MultipartFile multipartFile,
+                                                      GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
+        String name = genChartByAiRequest.getName();
+        String goal = genChartByAiRequest.getGoal();
+        String chartType = genChartByAiRequest.getChartType();
+        User loginUser = userService.getLoginUser(request);
+        // 校验
+        ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "目标为空");
+        ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "名称过长");
+        // 校验文件
+        long size = multipartFile.getSize();
+        String originalFilename = multipartFile.getOriginalFilename();
+        // 校验文件大小
+        final long ONE_MB = 1024 * 1024L;
+        ThrowUtils.throwIf(size > 10 * ONE_MB, ErrorCode.PARAMS_ERROR, "文件超过 10M");
+        // 校验文件后缀 aaa.png
+        String suffix = FileUtil.getSuffix(originalFilename);
+        final List<String> validFileSuffixList = Arrays.asList("xlsx", "xls");
         ThrowUtils.throwIf(!validFileSuffixList.contains(suffix), ErrorCode.PARAMS_ERROR, "文件后缀非法");
         // 增加限流器
         redisLimiterManager.doRateLimit("genChartByAi_" + loginUser.getId());
@@ -281,6 +329,7 @@ public class ChartController {
             updateChartResult.setId(chart.getId());
             updateChartResult.setGenChart(genChart);
             updateChartResult.setGenResult(genResult);
+            updateChartResult.setStatus("succeed");
             // todo 定义状态为枚举值
             boolean updateResult = chartService.updateById(updateChartResult);
             if (!updateResult) {

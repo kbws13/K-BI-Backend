@@ -30,7 +30,7 @@ public class QueueController {
     @GetMapping("/add")
     public void add(String name) {
         CompletableFuture.runAsync(() -> {
-           log.info("任务执行中：" + name + "，执行人：" + Thread.currentThread().getName());
+            log.info("任务执行中：" + name + "，执行人：" + Thread.currentThread().getName());
             try {
                 Thread.sleep(60000);
             } catch (InterruptedException e) {
