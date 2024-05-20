@@ -1,3 +1,3 @@
 # K-BI-Backend
 
-智能 BI 项目
+智能 BI 项目后端
